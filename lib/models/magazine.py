@@ -77,4 +77,6 @@ class Magazine:
         return None
 
 
-    
+    def __repr__(self):
+        
+        return (f"<Magazine id={self._id} name='{self.name}' category ='self.ctagory'>")

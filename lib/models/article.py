@@ -5,6 +5,8 @@ class Article:
         self.id = None
         self.name = name
         self.title = title
+        self.author = author
+        self.magazine = magazine
 
 
 
@@ -82,6 +84,10 @@ class Article:
             articles._id = row["id"]
             return articles
         return None
+    
+
+    def __repr__(self):
+        return f"Article id={self._id} name='{self.name}'title='{self.title}' author='self.author}' "
 
 
 

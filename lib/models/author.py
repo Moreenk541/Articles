@@ -47,12 +47,20 @@ class Author:
             author._id = row["id"]
             return author
         return None
-
+    
+    def articles(self):
+        conn,cursor = get_cursor()
+        cursor.execute("SELECT * FROM  articles WHERE author_id =?",(self.id,))
+        rows= cursor.fetchall
+        
+        conn.close()
+        return rows
 
 
 
         
-
+    def __repr__(self):
+        return f"<Author id={self._id} name='{self.name}'>"
     
 
 
