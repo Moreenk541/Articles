@@ -64,7 +64,28 @@ class Author:
         return rows
 
 
-        
+    def add_article(self,magazine,title)  :
+        conn,cursor = get_cursor()
+        cursor.execute("""
+            INSERT INTO articles (title, author_id,magazine_id)
+            VALUES(?,?,?)
+
+            """,title,self.id,magazine.id)
+        conn.commit()  
+        conn.close()
+    def topic_areas(self):
+        conn, cursor = get_cursor()
+        cursor.execute("""
+            SELECT DISTINCT m.category FROM magazines m
+            JOIN articles a ON m.id = a.magazine_id
+            WHERE a.author_id = ?
+        """, (self.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [row["category"] for row in rows]    
+
+
+            
     def __repr__(self):
         return f"<Author id={self._id} name='{self.name}'>"
     
