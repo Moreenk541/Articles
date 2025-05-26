@@ -1,5 +1,5 @@
 import sqlite3
-from lib.db.connection import get_connection
+from lib.db.connection import get_cursor
 class Author:
     def __init__(self,name):
         self.id = None
@@ -23,7 +23,34 @@ class Author:
         else :
             raise ValueError("Name must be a  string with up to 15 characters.") 
 
-    def save(self)    :
+    def save(self):
+        conn,cursor = get_cursor()
+
+        if self._id is None:
+            cursor.execute("INSERT INTO authors (name) VALUES (?)", (self.name,))
+            self._id = cursor.lastrowid
+        else:
+            cursor.execute("UPDATE authors SET name = ? WHERE id = ?", (self.name, self._id))
+
+        conn.commit()
+        conn.close()
+
+
+
+    def find_by_name(cls,name):
+        conn,cursor = get_cursor()
+        cursor.execute ("SELECT * FROM authors WHERE name =? " (name))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            author = cls(row["name"])
+            author._id = row["id"]
+            return author
+        return None
+
+
+
+
         
 
     
