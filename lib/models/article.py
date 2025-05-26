@@ -1,5 +1,6 @@
 
 from lib.db.connection import get_cursor
+
 class Article:
     def __init__(self,name,title,author,magazine):
         self.id = None
@@ -34,19 +35,19 @@ class Article:
     
     @name.setter
     def name (self, value):
-        if isinstance(value,str) and  1 <= len(value) <=30:
+        if isinstance(value,str) and  len(value) > 0:
             self._name = value
 
         else :
-            raise ValueError("Name must be a  string with up to 30 characters.") 
+            raise ValueError("Name must be a non-empty string.") 
         
     @title.setter
     def title (self, value):
-        if isinstance(value,str) and  1 <= len(value) <=100:
+        if isinstance(value,str) and  len(value) > 0:
             self._title = value
 
         else :
-            raise ValueError("Title must be a  string with up to 100 characters.") 
+            raise ValueError("Title must be a non-empty string.") 
     
 
     def save(self):

@@ -1,5 +1,6 @@
-import sqlite3
+
 from lib.db.connection import get_cursor
+
 class Magazine:
     def __init__(self,name,category):
         self.id = None
@@ -66,7 +67,7 @@ class Magazine:
     @classmethod
     def find_by_category(cls,category):
         conn,cursor = get_cursor()
-        cursor.execute("SELECT * FROM magazines WHERE category =?",(category))
+        cursor.execute("SELECT * FROM magazines WHERE category =?",(category,))
         row = cursor.fetchone
         conn.close()
 
@@ -76,17 +77,17 @@ class Magazine:
             return magazine
         return None
     
-    def authors(self):
-        conn,cursor =get_cursor()
-        cursor.execute("""
-            SELECT DISTINCT au.* FROM authors au
-            JOIN articles  a ON au.id =a.author_id
-            WHERE  a.magazine_id =?           
-            """,(self.id,))
-        rows= cursor.fetchall()
-        conn.close()
+    # def authors(self):
+    #     conn,cursor =get_cursor()
+    #     cursor.execute("""
+    #         SELECT DISTINCT au.* FROM authors au
+    #         JOIN articles  a ON au.id =a.author_id
+    #         WHERE  a.magazine_id =?           
+    #         """,(self.id,))
+    #     rows= cursor.fetchall()
+    #     conn.close()
 
-        return rows
+    #     return rows
     
 
     @classmethod
@@ -101,8 +102,55 @@ class Magazine:
         
         rows =cursor.fetchall()  
         conn.close()
-        return rows  
+        return [cls(row["name"], row["category"]) for row in rows]
+    
+    def articles(self):
+        conn, cursor = get_cursor()
+        cursor.execute("""
+            SELECT * FROM articles WHERE magazine_id = ?
+        """, (self.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        from lib.models.article import Article
+        return [Article.from_row(row) for row in rows]
+    
+    def contributors(self):
+        conn, cursor = get_cursor()
+        cursor.execute("""
+            SELECT DISTINCT au.* FROM authors au
+            JOIN articles a ON au.id = a.author_id
+            WHERE a.magazine_id = ?
+        """, (self.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        from lib.models.author import Author
+        return [Author(row["name"]) for row in rows]
+    
 
+    def article_titles(self):
+        conn, cursor = get_cursor()
+        cursor.execute("""
+            SELECT title FROM articles WHERE magazine_id = ?
+        """, (self.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [row["title"] for row in rows]
+    
+
+    def contributing_authors(self):
+        conn, cursor = get_cursor()
+        cursor.execute("""
+            SELECT au.*, COUNT(a.id) as article_count
+            FROM authors au
+            JOIN articles a ON au.id = a.author_id
+            WHERE a.magazine_id = ?
+            GROUP BY au.id
+            HAVING COUNT(a.id) > 2
+        """, (self.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        from lib.models.author import Author
+        return [Author(row["name"]) for row in rows]
 
 
     def __repr__(self):

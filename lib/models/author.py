@@ -36,10 +36,10 @@ class Author:
         conn.close()
 
 
-
+    @classmethod
     def find_by_name(cls,name):
         conn,cursor = get_cursor()
-        cursor.execute ("SELECT * FROM authors WHERE name =? " (name))
+        cursor.execute ("SELECT * FROM authors WHERE name =? ", (name,))
         row = cursor.fetchone()
         conn.close()
         if row:
@@ -51,17 +51,20 @@ class Author:
     def articles(self):
         conn,cursor = get_cursor()
         cursor.execute("SELECT * FROM  articles WHERE author_id =?",(self.id,))
-        rows= cursor.fetchall
+        rows= cursor.fetchall()
         
         conn.close()
-        return rows
+        from lib.models.article import Article
+        return [Article.from_row(row) for row in rows]
+
     
     def magazines(self):
         conn,cursor =get_cursor()
         cursor.execute(""" SELECT DISTINCT m.* FROM magazines m JOIN articles a ON m.id = a.magazine_id WHERE a.author_id = ? """, (self.id,))
         rows =cursor.fetchall
         conn.close()
-        return rows
+        from lib.models.magazine import Magazine
+        return [Magazine.from_row(row) for row in rows]
 
 
     def add_article(self,magazine,title)  :
@@ -73,6 +76,8 @@ class Author:
             """,title,self.id,magazine.id)
         conn.commit()  
         conn.close()
+
+        
     def topic_areas(self):
         conn, cursor = get_cursor()
         cursor.execute("""
