@@ -49,16 +49,29 @@ class Magazine:
         conn.close()
 
 
+    @classmethod
+    def find_by_name(cls, name):
+        conn, cursor = get_cursor()
+        cursor.execute("SELECT * FROM magazines WHERE name = ?", (name,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            magazine = cls(row["name"], row["category"])
+            magazine._id = row["id"]
+            return magazine
+        return None    
+
+
 
     @classmethod
     def find_by_category(cls,category):
         conn,cursor = get_cursor()
-        cursor.execute("SELECT * FROM magazines WHERE category =?",category)
+        cursor.execute("SELECT * FROM magazines WHERE category =?",(category))
         row = cursor.fetchone
         conn.close()
 
         if row :
-            magazine =cls(row["name","category"])
+            magazine =cls(row["name"],row["category"])
             magazine._id =["id"]
             return magazine
         return None
