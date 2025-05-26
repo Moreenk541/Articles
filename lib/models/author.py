@@ -55,7 +55,13 @@ class Author:
         
         conn.close()
         return rows
-
+    
+    def magazines(self):
+        conn,cursor =get_cursor()
+        cursor.execute(""" SELECT DISTINCT m.* FROM magazines m JOIN articles a ON m.id = a.magazine_id WHERE a.author_id = ? """, (self.id,))
+        rows =cursor.fetchall
+        conn.close()
+        return rows
 
 
         
