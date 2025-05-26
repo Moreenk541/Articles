@@ -81,12 +81,27 @@ class Magazine:
         cursor.execute("""
             SELECT DISTINCT au.* FROM authors au
             JOIN articles  a ON au.id =a.author_id
-                       WHERE  a.magazine_id =?           
+            WHERE  a.magazine_id =?           
             """,(self.id,))
         rows= cursor.fetchall()
         conn.close()
 
         return rows
+    
+
+    @classmethod
+    def magazines_with_multiple_authors(cls):
+        conn,cursor = get_cursor()
+        cursor.execute("""
+                SELECT m.*  FROM magazines m
+                JOIN articles a ON m.id = a.magazine_id  
+                GROUP BY  m.id
+                HAVING COUNT(DISTINCT a.author_id) >= 2            
+            """)
+        
+        rows =cursor.fetchall()  
+        conn.close()
+        return rows  
 
 
 
