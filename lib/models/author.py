@@ -1,85 +1,113 @@
-import sqlite3
-from lib.db.connection import get_cursor
+from lib.db.connection import get_connection
+
 class Author:
-    def __init__(self,name):
-        self.id = None
+    def __init__(self, name, id=None):
+        self.id = id
         self.name = name
 
-
+    def __repr__(self):
+        return f"<Author {self.id}: {self.name}>"
 
     @property
     def name(self):
         return self._name
-    
-    @property
-    def id(self):
-        return self._id
-    
-    @name.setter
-    def name (self, value):
-        if isinstance(value,str) and  1 <= len(value) <=15:
-            self._name = value
 
-        else :
-            raise ValueError("Name must be a  string with up to 15 characters.") 
+    @name.setter
+    def name(self, value):
+        if not isinstance(value, str):
+            raise TypeError("Name must be a string")
+        if not (5 <= len(value) <= 25):
+            raise ValueError("Name must be between 5 and 25 characters")
+        self._name = value
 
     def save(self):
-        conn,cursor = get_cursor()
-
-        if self._id is None:
-            cursor.execute("INSERT INTO authors (name) VALUES (?)", (self.name,))
-            self._id = cursor.lastrowid
+        conn = get_connection()
+        cursor = conn.cursor()
+        if self.id is None:
+            cursor.execute(
+                "INSERT INTO authors (name) VALUES (?)",
+                (self.name,)
+            )
+            self.id = cursor.lastrowid
         else:
-            cursor.execute("UPDATE authors SET name = ? WHERE id = ?", (self.name, self._id))
-
+            cursor.execute(
+                "UPDATE authors SET name = ? WHERE id = ?",
+                (self.name, self.id)
+            )
         conn.commit()
         conn.close()
 
+    @classmethod
+    def create(cls, name):
+        author = cls(name)
+        author.save()
+        return author
 
     @classmethod
-    def find_by_name(cls,name):
-        conn,cursor = get_cursor()
-        cursor.execute ("SELECT * FROM authors WHERE name =? ", (name,))
+    def find_by_id(cls, id):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM authors WHERE id = ?", (id,))
         row = cursor.fetchone()
         conn.close()
         if row:
-            author = cls(row["name"])
-            author._id = row["id"]
-            return author
+            return cls(row["name"], row["id"])
         return None
-    
+
+    @classmethod
+    def find_by_name(cls, name):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM authors WHERE name = ?", (name,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return cls(row["name"], row["id"])
+        return None
+
+    @classmethod
+    def get_all(cls):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM authors")
+        rows = cursor.fetchall()
+        conn.close()
+        return [cls(row["name"], row["id"]) for row in rows]
+
     def articles(self):
-        conn,cursor = get_cursor()
-        cursor.execute("SELECT * FROM  articles WHERE author_id =?",(self.id,))
-        rows= cursor.fetchall()
-        
-        conn.close()
         from lib.models.article import Article
-        return [Article.from_row(row) for row in rows]
-
-    
-    def magazines(self):
-        conn,cursor =get_cursor()
-        cursor.execute(""" SELECT DISTINCT m.* FROM magazines m JOIN articles a ON m.id = a.magazine_id WHERE a.author_id = ? """, (self.id,))
-        rows =cursor.fetchall
-        conn.close()
-        from lib.models.magazine import Magazine
-        return [Magazine.from_row(row) for row in rows]
-
-
-    def add_article(self,magazine,title)  :
-        conn,cursor = get_cursor()
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO articles (title, author_id,magazine_id)
-            VALUES(?,?,?)
-
-            """,title,self.id,magazine.id)
-        conn.commit()  
+            SELECT * FROM articles
+            WHERE author_id = ?
+        """, (self.id,))
+        rows = cursor.fetchall()
         conn.close()
+        return [Article(row["title"], row["author_id"], row["magazine_id"], row["id"]) for row in rows]
 
-        
+    def magazines(self):
+        from lib.models.magazine import Magazine
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT DISTINCT m.* FROM magazines m
+            JOIN articles a ON m.id = a.magazine_id
+            WHERE a.author_id = ?
+        """, (self.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [Magazine(row["name"], row["category"], row["id"]) for row in rows]
+
+    def add_article(self, magazine, title):
+        from lib.models.article import Article
+        article = Article(title, self.id, magazine.id)
+        article.save()
+        return article
+
     def topic_areas(self):
-        conn, cursor = get_cursor()
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT DISTINCT m.category FROM magazines m
             JOIN articles a ON m.id = a.magazine_id
@@ -87,19 +115,4 @@ class Author:
         """, (self.id,))
         rows = cursor.fetchall()
         conn.close()
-        return [row["category"] for row in rows]    
-
-
-            
-    def __repr__(self):
-        return f"<Author id={self._id} name='{self.name}'>"
-    
-
-
-    
-
-
-
-
-
-
+        return [row["category"] for row in rows]
